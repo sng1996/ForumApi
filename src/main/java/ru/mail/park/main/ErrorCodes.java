@@ -22,4 +22,8 @@ public class ErrorCodes {
             default: return "Unknown error code";
         }
     }
+
+    public static String codeToJson(int errorCode) {
+        return "{\"code\":\"" + errorCode + "\",\"response\":\"" + getErrorMessage(errorCode) + "\"}";
+    }
 }
