@@ -2,15 +2,25 @@ package ru.mail.park.main.requests.user;
 
 import ru.mail.park.main.requests.Request;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Created by farid on 12.10.16.
  */
 public class UserCreationRequest extends Request {
 
+    @NotNull
     private String username;
+
+    @NotNull
     private String about;
+
+    @NotNull
     private String name;
+
+    @NotNull
     private String email;
+
     private boolean isAnonymous = false;
     private int id = 0;
 

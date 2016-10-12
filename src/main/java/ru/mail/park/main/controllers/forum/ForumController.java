@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mail.park.main.ErrorCodes;
+import ru.mail.park.main.controllers.Controller;
+import ru.mail.park.main.controllers.post.PostHelper;
 import ru.mail.park.main.controllers.user.UserQueries;
 import ru.mail.park.main.database.Database;
 import ru.mail.park.main.database.DbException;
@@ -19,22 +21,29 @@ import java.sql.ResultSet;
  */
 
 @RestController
-public class ForumController {
+public class ForumController extends Controller {
 
     @RequestMapping(path = "db/api/forum/create", method = RequestMethod.POST)
     public ResponseEntity createForum(@RequestBody ForumCreationRequest body) {
+        if (!validator.validate(body).isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
+        }
+
         try {
             final Integer userID = UserQueries.getUserIdByEmailQuery(body.getUser());
 
             if (userID == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                        ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
             }
 
             Database.update(ForumQueries.createForumQuery(body, userID));
             return ResponseEntity.ok().body(body.responsify());
         } catch (DbException ex) {
             System.out.println(ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR));
         }
     }
 }

@@ -2,18 +2,33 @@ package ru.mail.park.main.requests.thread;
 
 import ru.mail.park.main.requests.Request;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Created by farid on 12.10.16.
  */
 @SuppressWarnings("unused")
 public class ThreadCreationRequest extends Request {
 
+    @NotNull
     private String forum;
+
+    @NotNull
     private String title;
+
+    @NotNull
     private boolean isClosed;
+
+    @NotNull
     private String user;
+
+    @NotNull
     private String date;
+
+    @NotNull
     private String message;
+
+    @NotNull
     private String slug;
     private boolean isDeleted = false;
 

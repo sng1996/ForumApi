@@ -3,17 +3,30 @@ package ru.mail.park.main.requests.post;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mail.park.main.requests.Request;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Created by farid on 12.10.16.
  */
 @SuppressWarnings("unused")
 public class PostCreationRequest extends Request {
 
+    @NotNull
     private String forum;
+
+    @NotNull
     private String user;
+
+    @NotNull
     private String date;
+
+    @NotNull
     private String message;
-    private int parent;
+
+    @NotNull
+    private Integer thread;
+
+    private Integer parent;
     private boolean isApproved = false;
     private boolean isHighlighted = false;
     private boolean isEdited = false;
@@ -24,12 +37,13 @@ public class PostCreationRequest extends Request {
 
     }
 
-    public PostCreationRequest(String forum, String user, String date, String message, int parent, boolean isApproved,
+    public PostCreationRequest(String forum, String user, String date, String message, Integer thread, Integer parent, boolean isApproved,
                                boolean isHighlighted, boolean isEdited, boolean isSpam, boolean isDeleted) {
         this.forum = forum;
         this.user = user;
         this.date = date;
         this.message = message;
+        this.thread = thread;
         this.parent = parent;
         this.isApproved = isApproved;
         this.isHighlighted = isHighlighted;
@@ -54,7 +68,11 @@ public class PostCreationRequest extends Request {
         return message;
     }
 
-    public int getParent() {
+    public Integer getThread() {
+        return thread;
+    }
+
+    public Integer getParent() {
         return parent;
     }
 
@@ -94,7 +112,11 @@ public class PostCreationRequest extends Request {
         this.message = message;
     }
 
-    public void setParent(int parent) {
+    public void setThread(Integer thread) {
+        this.thread = thread;
+    }
+
+    public void setParent(Integer parent) {
         this.parent = parent;
     }
 

@@ -1,16 +1,27 @@
 package ru.mail.park.main.requests.forum;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.mail.park.main.ErrorCodes;
 import ru.mail.park.main.requests.Request;
+
+import javax.validation.constraints.NotNull;
+
 
 /**
  * Created by farid on 10.10.16.
  */
 public class ForumCreationRequest extends Request {
+
+    @NotNull
     private String name;
+
+    @NotNull
     private String short_name;
+
+    @NotNull
     private String user;
+
     private int id;
 
     public ForumCreationRequest() {
