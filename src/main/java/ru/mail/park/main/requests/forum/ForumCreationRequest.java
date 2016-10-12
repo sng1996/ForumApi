@@ -2,11 +2,12 @@ package ru.mail.park.main.requests.forum;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.mail.park.main.ErrorCodes;
+import ru.mail.park.main.requests.Request;
 
 /**
  * Created by farid on 10.10.16.
  */
-public class ForumCreationRequest {
+public class ForumCreationRequest extends Request {
     private String name;
     private String short_name;
     private String user;
@@ -54,14 +55,5 @@ public class ForumCreationRequest {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String toJson() {
-        try {
-            final ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsString(this);
-        } catch (Exception e) {
-            return ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR);
-        }
     }
 }

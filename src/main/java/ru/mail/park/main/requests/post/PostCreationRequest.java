@@ -1,12 +1,13 @@
 package ru.mail.park.main.requests.post;
 
 import org.springframework.web.bind.annotation.RestController;
+import ru.mail.park.main.requests.Request;
 
 /**
  * Created by farid on 12.10.16.
  */
 @SuppressWarnings("unused")
-public class PostCreationRequest {
+public class PostCreationRequest extends Request {
 
     private String forum;
     private String user;

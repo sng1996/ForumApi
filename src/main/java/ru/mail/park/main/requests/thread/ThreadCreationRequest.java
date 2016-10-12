@@ -1,10 +1,12 @@
 package ru.mail.park.main.requests.thread;
 
+import ru.mail.park.main.requests.Request;
+
 /**
  * Created by farid on 12.10.16.
  */
 @SuppressWarnings("unused")
-public class ThreadCreationRequest {
+public class ThreadCreationRequest extends Request {
 
     private String forum;
     private String title;

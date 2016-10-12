@@ -22,7 +22,7 @@ public class Database {
         }
     }*/
 
-    public static ResultSet select(String query) {
+    public static ResultSet select(String query) throws DbException {
         try (Connection connection = DriverManager.getConnection(Credentials.HOST, Credentials.USER, Credentials.PASSWORD);
              Statement statement = connection.createStatement()) {
             final ResultSet result = statement.executeQuery(query);
@@ -30,12 +30,12 @@ public class Database {
             return result;
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
+            throw new DbException("Something went south during SELECT statement: " + query);
         }
     }
 
     //update allows UPDATE, DELETE and INSERT queries
-    public static int update(String query) {
+    public static int update(String query) throws DbException {
         try(Connection connection = DriverManager.getConnection(Credentials.HOST, Credentials.USER, Credentials.PASSWORD);
             Statement statement = connection.createStatement()) {
             statement.executeUpdate(query);
@@ -43,7 +43,7 @@ public class Database {
             return 0;
         } catch (SQLException e) {
             e.printStackTrace();
-            return 1;
+            throw new DbException("Something went south during the execution of " + query);
         }
     }
 }

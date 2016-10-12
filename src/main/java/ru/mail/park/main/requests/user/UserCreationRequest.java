@@ -1,26 +1,30 @@
 package ru.mail.park.main.requests.user;
 
+import ru.mail.park.main.requests.Request;
+
 /**
  * Created by farid on 12.10.16.
  */
-public class UserCreationRequest {
+public class UserCreationRequest extends Request {
 
     private String username;
     private String about;
     private String name;
     private String email;
     private boolean isAnonymous = false;
+    private int id = 0;
 
     public UserCreationRequest() {
 
     }
 
-    public UserCreationRequest(String username, String about, String name, String email, boolean isAnonymous) {
+    public UserCreationRequest(String username, String about, String name, String email, boolean isAnonymous, int id) {
         this.username = username;
         this.about = about;
         this.name = name;
         this.email = email;
         this.isAnonymous = isAnonymous;
+        this.id = id;
     }
 
     public String getUsername() {
@@ -43,6 +47,10 @@ public class UserCreationRequest {
         return isAnonymous;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public void setUsername(String username) {
         this.username = username;
     }
@@ -61,5 +69,9 @@ public class UserCreationRequest {
 
     public void setAnonymous(boolean anonymous) {
         isAnonymous = anonymous;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }
