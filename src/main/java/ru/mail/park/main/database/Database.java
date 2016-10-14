@@ -1,49 +1,55 @@
 package ru.mail.park.main.database;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
+import org.apache.commons.dbcp2.BasicDataSource;
+
 import java.sql.*;
 
 /**
  * Created by farid on 11.10.16.
  */
+@SuppressWarnings("Duplicates")
 public class Database {
 
-    /*private static DataSource dataSource;
+    private static BasicDataSource dataSource;
 
     static {
-        try {
-            Context context = new InitialContext();
-            dataSource = (DataSource) context.lookup(Credentials.HOST);
-        } catch (NamingException e) {
-            e.printStackTrace();
-        }
-    }*/
+        dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setUrl(Credentials.HOST);
+        dataSource.setPassword(Credentials.PASSWORD);
+        dataSource.setUsername(Credentials.USER);
+    }
 
-    public static ResultSet select(String query) throws DbException {
-        try (Connection connection = DriverManager.getConnection(Credentials.HOST, Credentials.USER, Credentials.PASSWORD);
-             Statement statement = connection.createStatement()) {
-            final ResultSet result = statement.executeQuery(query);
-            connection.close();
-            return result;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new DbException("Something went south during SELECT statement: " + query);
+    public static <T> T select(String query, TResultCallback<T> callback) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeQuery(query);
+                try (ResultSet result = statement.getResultSet()) {
+                    return callback.call(result);
+                }
+            }
+        }
+    }
+
+    public static void select(String query, ResultCallback callback) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeQuery(query);
+                try (ResultSet result = statement.getResultSet()) {
+                    callback.call(result);
+                }
+            }
         }
     }
 
     //update allows UPDATE, DELETE and INSERT queries
-    public static int update(String query) throws DbException {
-        try(Connection connection = DriverManager.getConnection(Credentials.HOST, Credentials.USER, Credentials.PASSWORD);
-            Statement statement = connection.createStatement()) {
-            statement.executeUpdate(query);
-            connection.close();
-            return 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new DbException("Something went south during the execution of " + query);
+    public static int update(String query) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate(query);
+
+                return 0;
+            }
         }
     }
 }

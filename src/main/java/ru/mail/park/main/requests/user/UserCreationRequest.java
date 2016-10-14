@@ -1,5 +1,6 @@
 package ru.mail.park.main.requests.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import ru.mail.park.main.requests.Request;
 
 import javax.validation.constraints.NotNull;
@@ -21,6 +22,7 @@ public class UserCreationRequest extends Request {
     @NotNull
     private String email;
 
+    @JsonProperty(value = "isAnonymous")
     private boolean isAnonymous = false;
     private int id = 0;
 
@@ -77,8 +79,8 @@ public class UserCreationRequest extends Request {
         this.email = email;
     }
 
-    public void setAnonymous(boolean anonymous) {
-        isAnonymous = anonymous;
+    public void setIsAnonymous(boolean isAnonymous) {
+        this.isAnonymous = isAnonymous;
     }
 
     public void setId(int id) {

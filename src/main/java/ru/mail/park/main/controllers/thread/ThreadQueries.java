@@ -1,7 +1,6 @@
 package ru.mail.park.main.controllers.thread;
 
 import ru.mail.park.main.database.Database;
-import ru.mail.park.main.database.DbException;
 import ru.mail.park.main.requests.thread.ThreadCreationRequest;
 
 import java.sql.ResultSet;
@@ -26,11 +25,11 @@ public class ThreadQueries {
 
     public static Integer getThreadById(int threadId) {
         try {
-            ResultSet result = Database.select("SELECT threadID FROM threads WHERE postID=" + threadId);
-            return result.getInt("threadID");
-        } catch (DbException ex) {
-            System.out.println(ex.getMessage());
-            return null;
+            return Database.select("SELECT threadID FROM threads WHERE postID=" + threadId,
+                    result -> {
+                        result.next();
+                        return result.getInt("threadID");
+                    });
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
             return null;

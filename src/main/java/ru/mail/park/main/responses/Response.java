@@ -1,13 +1,13 @@
-package ru.mail.park.main.requests;
+package ru.mail.park.main.responses;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.mail.park.main.ErrorCodes;
 
 /**
- * Created by farid on 12.10.16.
+ * Created by farid on 13.10.16.
  */
-public class Request {
+public class Response {
 
     public String toJson() {
         try {

@@ -1,11 +1,9 @@
 package ru.mail.park.main.controllers.post;
 
 import ru.mail.park.main.database.Database;
-import ru.mail.park.main.database.DbException;
 import ru.mail.park.main.requests.post.PostCreationRequest;
 
 import java.sql.ResultSet;
-import java.sql.SQLDataException;
 import java.sql.SQLException;
 
 /**
@@ -34,11 +32,11 @@ public class PostQueries {
 
     public static Integer getPostById(int postId) {
         try {
-            ResultSet result = Database.select("SELECT postID FROM posts WHERE postID=" + postId);
-            return result.getInt("postID");
-        } catch (DbException ex) {
-            System.out.println(ex.getMessage());
-            return null;
+            return Database.select("SELECT postID FROM posts WHERE postID='" + postId + '\'',
+                    result -> {
+                        result.next();
+                        return result.getInt("postID");
+                    });
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
             return null;

@@ -1,6 +1,5 @@
 package ru.mail.park.main.controllers.post;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,8 +11,9 @@ import ru.mail.park.main.controllers.forum.ForumQueries;
 import ru.mail.park.main.controllers.thread.ThreadQueries;
 import ru.mail.park.main.controllers.user.UserQueries;
 import ru.mail.park.main.database.Database;
-import ru.mail.park.main.database.DbException;
 import ru.mail.park.main.requests.post.PostCreationRequest;
+
+import java.sql.SQLException;
 
 /**
  * Created by farid on 12.10.16.
@@ -25,13 +25,13 @@ public class PostController extends Controller {
     @RequestMapping(path = "/db/api/post/create", method = RequestMethod.POST)
     public ResponseEntity createPost(@RequestBody PostCreationRequest body) {
         if (!validator.validate(body).isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST)
             );
         }
 
         final Integer forumId = ForumQueries.getForumIdByShortName(body.getForum());
-        final Integer userId = UserQueries.getUserIdByEmailQuery(body.getUser());
+        final Integer userId = UserQueries.getUserIdByEmail(body.getUser());
         final Integer postId = PostQueries.getPostById(body.getParent());
         final Integer threadId = ThreadQueries.getThreadById(body.getThread());
 
@@ -39,7 +39,7 @@ public class PostController extends Controller {
                 userId == null ||
                 postId == null ||
                 threadId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST)
             );
         }
@@ -47,8 +47,8 @@ public class PostController extends Controller {
         try {
             Database.update(PostQueries.createPostQuery(body, threadId, userId, forumId, postId));
             return ResponseEntity.ok().body(body.responsify());
-        } catch (DbException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+        } catch (SQLException ex) {
+            return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR)
             );
         }

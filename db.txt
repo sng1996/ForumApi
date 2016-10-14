@@ -1,0 +1,148 @@
+DROP DATABASE forum;
+CREATE DATABASE forum;
+USE forum;
+
+CREATE TABLE IF NOT EXISTS users (
+  userID INT NOT NULL AUTO_INCREMENT,
+  username VARCHAR(255),
+  about TEXT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+
+  isAnonymous BOOL DEFAULT FALSE,
+
+  PRIMARY KEY (userID),
+  UNIQUE (email)
+) CHARSET = utf8;
+
+
+CREATE TABLE IF NOT EXISTS forums (
+  forumID INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL ,
+  short_name VARCHAR(255) NOT NULL,
+  userID INT NOT NULL,
+  PRIMARY KEY (forumID),
+  CONSTRAINT fk_forum_user FOREIGN KEY (userID)
+    REFERENCES users (userID)
+) CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS threads (
+  threadID INT NOT NULL AUTO_INCREMENT,
+  forumID INT NOT NULL,
+  userID INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  isClosed BOOL NOT NULL DEFAULT FALSE,
+  creationDate TIMESTAMP NOT NULL,
+  message MEDIUMTEXT NOT NULL,
+  slug VARCHAR(255),
+
+  isDeleted BOOL DEFAULT FALSE,
+
+  PRIMARY KEY (threadID),
+  CONSTRAINT fk_thread_forum FOREIGN KEY (forumID)
+  REFERENCES forums (forumID),
+  CONSTRAINT fk_thread_user FOREIGN KEY (userID)
+  REFERENCES users (userID)
+) CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS posts (
+  postID INT NOT NULL AUTO_INCREMENT,
+  creationDate TIMESTAMP NOT NULL,
+  threadID INT NOT NULL,
+  message MEDIUMTEXT NOT NULL,
+  userID INT NOT NULL,
+  forumID INT NOT NULL,
+
+  parentPostID INT DEFAULT NULL,
+  isApproved BOOL DEFAULT FALSE,
+  isHighlighted BOOL DEFAULT FALSE,
+  isEdited BOOL DEFAULT FALSE,
+  isSpam BOOL DEFAULT FALSE,
+  isDeleted BOOL DEFAULT FALSE,
+
+  PRIMARY KEY (postID),
+  CONSTRAINT fk_post_parentPost FOREIGN KEY (parentPostID)
+    REFERENCES posts (postID),
+  CONSTRAINT fk_post_thread FOREIGN KEY (threadID)
+    REFERENCES threads (threadID),
+  CONSTRAINT fk_post_user FOREIGN KEY (userID)
+    REFERENCES users (userID),
+  CONSTRAINT fk_post_forum FOREIGN KEY (forumID)
+    REFERENCES forums (forumID)
+) CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS counters (
+  counterName VARCHAR(255) NOT NULL,
+  count INT UNSIGNED NOT NULL
+) CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS counters (
+  counterName VARCHAR(255) NOT NULL,
+  count INT UNSIGNED NOT NULL
+) CHARSET = utf8;
+
+CREATE TABLE IF NOT EXISTS followers (
+  followerID INT NOT NULL,
+  followeeID INT NOT NULL,
+  CONSTRAINT fk_follower_user FOREIGN KEY (followerID)
+    REFERENCES users (userID),
+  CONSTRAINT fk_followee_user FOREIGN KEY (followeeID)
+    REFERENCES users (userID),
+  CONSTRAINT uq_follower_followee UNIQUE (followerID, followeeID)
+);
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  userID INT NOT NULL,
+  postID INT NOT NULL,
+  CONSTRAINT fk_subscription_user FOREIGN KEY (userID)
+    REFERENCES users (userID),
+  CONSTRAINT fk_subscription_post FOREIGN KEY (postID)
+    REFERENCES posts (postID),
+  CONSTRAINT uq_subscription UNIQUE (userID, postID)
+);
+
+INSERT INTO counters (counterName, count) VALUES
+  ('forums', 0),
+  ('users', 0),
+  ('threads', 0),
+  ('posts', 0);
+
+DELIMITER //
+CREATE TRIGGER userAddTrigger AFTER INSERT ON users
+FOR EACH ROW
+BEGIN
+  UPDATE counters
+  SET counters.count = counters.count + 1
+  WHERE counters.counterName = 'users';
+END;//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER postAddTrigger AFTER INSERT ON posts
+FOR EACH ROW
+  BEGIN
+    UPDATE counters
+    SET counters.count = counters.count + 1
+    WHERE counters.counterName = 'posts';
+  END;//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER threadAddTrigger AFTER INSERT ON threads
+FOR EACH ROW
+  BEGIN
+    UPDATE counters
+    SET counters.count = counters.count + 1
+    WHERE counters.counterName = 'threads';
+  END;//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER forumAddTrigger AFTER INSERT ON forums
+FOR EACH ROW
+  BEGIN
+    UPDATE counters
+    SET counters.count = counters.count + 1
+    WHERE counters.counterName = 'forums';
+  END;//
+DELIMITER ;

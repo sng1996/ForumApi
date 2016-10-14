@@ -1,20 +1,15 @@
 package ru.mail.park.main.controllers.user;
 
-import com.sun.deploy.net.HttpResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.mail.park.main.ErrorCodes;
 import ru.mail.park.main.controllers.Controller;
+import ru.mail.park.main.controllers.tools.ToolsQueries;
 import ru.mail.park.main.database.Database;
-import ru.mail.park.main.database.DbException;
 import ru.mail.park.main.requests.user.UserCreationRequest;
+import ru.mail.park.main.responses.user.UserInfoResponse;
 
-import javax.validation.ConstraintViolation;
-import java.util.Set;
+import java.sql.SQLException;
 
 /**
  * Created by farid on 12.10.16.
@@ -26,17 +21,48 @@ public class UserController extends Controller {
     public ResponseEntity createUser (@RequestBody UserCreationRequest body) {
 
         if (!validator.validate(body).isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
         }
 
         try {
-            Database.update(UserQueries.createUserQuery(body));
-            return ResponseEntity.ok().body(body.toJson());
-        } catch (DbException ex) {
-            System.out.println(ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            final Integer currentId = ToolsQueries.getCurrentCount("users");
+
+            if (currentId == null) return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR));
+
+            body.setId(currentId);
+            Database.update(UserQueries.createUserQuery(body));
+            System.out.println(body.responsify());
+
+            return ResponseEntity.ok().body(body.responsify());
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR));
+        }
+    }
+
+    @RequestMapping(path = "db/api/user/details/", method = RequestMethod.GET)
+    public ResponseEntity getUserInfo(@RequestParam("user") String email) {
+        if (email.isEmpty()) return ResponseEntity.ok().body(
+                ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
+
+        try {
+            final UserInfoResponse response = UserQueries.getUserInfoByEmail(email);
+
+            if (response== null) {
+                return ResponseEntity.ok().body(
+                        ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR));
+            }
+
+            System.out.println(response.responsify());
+
+            return ResponseEntity.ok().body(response.responsify());
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
         }
     }
 }
