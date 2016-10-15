@@ -46,9 +46,11 @@ public class Database {
     public static int update(String query) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate(query);
-
-                return 0;
+                statement.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
+                try(ResultSet result = statement.getGeneratedKeys()) {
+                    result.next();
+                    return result.getInt(1);
+                }
             }
         }
     }

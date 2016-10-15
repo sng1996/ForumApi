@@ -1,8 +1,10 @@
 package ru.mail.park.main.controllers.user;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ru.mail.park.main.database.Database;
 import ru.mail.park.main.requests.user.UserCreationRequest;
-import ru.mail.park.main.responses.user.UserInfoResponse;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,53 +40,64 @@ public class UserQueries {
                 });
     }
 
-    public static UserInfoResponse getUserInfoByEmail (String email) throws SQLException {
-        final UserInfoResponse userInfoResponse = new UserInfoResponse();
+    public static ObjectNode getUserInfoByEmail (String email) throws SQLException {
+        ObjectMapper mapper = new ObjectMapper();
+        final ObjectNode userInfoResponse = mapper.createObjectNode();
 
         Database.select("SELECT userID, about, isAnonymous, name, username, email " +
                 "FROM users WHERE email='" + email + '\'',
                 result -> {
                     result.next();
-                    userInfoResponse.setId(result.getInt("userID"));
-                    userInfoResponse.setAbout(result.getString("about"));
-                    userInfoResponse.setIsAnonymous(result.getBoolean("isAnonymous"));
-                    userInfoResponse.setName(result.getString("name"));
-                    userInfoResponse.setUsername(result.getString("username"));
-                    userInfoResponse.setEmail(result.getString("email"));
+                    userInfoResponse.put("id", result.getInt("userID"));
+                    userInfoResponse.put("about", result.getString("about"));
+                    userInfoResponse.put("isAnonymous", result.getBoolean("isAnonymous"));
+                    userInfoResponse.put("name", result.getString("name"));
+                    userInfoResponse.put("username", result.getString("username"));
+                    userInfoResponse.put("email", result.getString("email"));
 
                 });
 
         //getting followers
+        final ArrayNode followers = mapper.createArrayNode();
+
         Database.select("SELECT email FROM users " +
                 "INNER JOIN followers " +
-                " ON followers.followeeID=" + userInfoResponse.getId(),
+                " ON followers.followeeID=" + userInfoResponse.get("id").asInt(),
                 result -> {
                     while (result.next()) {
-                        userInfoResponse.addFollowee(result.getString("email"));
+                        followers.add(result.getString("email"));
                     }
                 });
+
+        userInfoResponse.set("followers", followers);
 
         //getting followees
+        final ArrayNode followees = mapper.createArrayNode();
 
         Database.select("SELECT email FROM users " +
                 "INNER JOIN followers " +
-                " ON followers.followerID=" + userInfoResponse.getId(),
+                " ON followers.followerID=" + userInfoResponse.get("id").asInt(),
                 result -> {
                     while (result.next()) {
-                        userInfoResponse.addFollowee(result.getString("email"));
+                        followees.add(result.getString("email"));
                     }
                 });
+
+        userInfoResponse.set("following", followees);
 
         //getting subscriptions
+        final ArrayNode subscriptions = mapper.createArrayNode();
+
         Database.select("SELECT subscriptions.postID FROM subscriptions " +
                 "INNER JOIN posts " +
-                " ON subscriptions.userID=" + userInfoResponse.getId(),
+                " ON subscriptions.userID=" + userInfoResponse.get("id").asInt(),
                 result -> {
                     while (result.next()) {
-                        userInfoResponse.addSubscription(result.getInt("postID"));
+                        subscriptions.add(result.getInt("postID"));
                     }
                 });
 
+        userInfoResponse.set("subscriptions", subscriptions);
         return userInfoResponse;
     }
 }

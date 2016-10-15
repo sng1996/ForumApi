@@ -1,5 +1,8 @@
 package ru.mail.park.main.controllers.thread;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.mail.park.main.ErrorCodes;
@@ -30,37 +33,54 @@ public class ThreadController extends Controller {
             final Integer forumId = ForumQueries.getForumIdByShortName(body.getForum());
             final Integer userId = UserQueries.getUserIdByEmail(body.getUser());
 
-            Database.update(ThreadQueries.createThreadQuery(body, userId, forumId));
+            body.setId(Database.update(ThreadQueries.createThreadQuery(body, userId, forumId)));
+
+            //System.out.println(body.responsify());
+
             return ResponseEntity.ok().body(body.responsify());
         } catch (SQLException ex) {
+            ex.printStackTrace();
             return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
         }
     }
 
-    @RequestMapping(path = "db/api/user/details/", method = RequestMethod.GET)
+    @RequestMapping(path = "db/api/thread/details/", method = RequestMethod.GET)
     public ResponseEntity getUserInfo(@RequestParam("related") ArrayList<String> related,
-                                      @RequestParam("forum") String shortName) {
-        if (shortName.isEmpty()) return ResponseEntity.ok().body(
+                                      @RequestParam("thread") Integer threadId) {
+
+        if (threadId == null) return ResponseEntity.ok().body(
                 ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
 
         try {
-            ForumInfoResponse response = null;
+            final ObjectMapper mapper = new ObjectMapper();
 
-            if (!related.equals("user"))
-                response = ForumQueries.getForumInfoByShortName(shortName, false);
-            else
-                response = ForumQueries.getForumInfoByShortName(shortName, true);
+            final ObjectNode threadInfo = ThreadQueries.getThreadInfoById(threadId);
 
-            if (response == null) {
+            if (threadInfo == null) {
                 return ResponseEntity.ok().body(
-                        ErrorCodes.codeToJson(ErrorCodes.UNKNOWN_ERROR));
+                        ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST));
             }
 
-            System.out.println(response.responsify());
+            if (related.contains("user")) threadInfo.set("user",
+                    UserQueries.getUserInfoByEmail(threadInfo.get("user").asText()));
 
-            return ResponseEntity.ok().body(response.responsify());
+            //FIXME: false stands for not including user into forum (bug-prone)
+            if (related.contains("forum")) threadInfo.set("forum",
+                    ForumQueries.getForumInfoByShortName(threadInfo.get("forum").asText(), false));
+
+            final ObjectNode response = mapper.createObjectNode();
+
+            response.put("code", 0);
+            response.set("response", threadInfo);
+            //System.out.println(mapper.writeValueAsString(response));
+
+            return ResponseEntity.ok().body(mapper.writeValueAsString(response));
         } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
+        } catch (JsonProcessingException ex) {
             System.out.println(ex.getMessage());
             return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));

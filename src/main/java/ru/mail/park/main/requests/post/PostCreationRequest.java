@@ -1,5 +1,6 @@
 package ru.mail.park.main.requests.post;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mail.park.main.requests.Request;
 
@@ -27,18 +28,30 @@ public class PostCreationRequest extends Request {
     private Integer thread;
 
     private Integer parent;
+
+    @JsonProperty(value = "isApproved")
     private boolean isApproved = false;
+
+    @JsonProperty(value = "isHighlighted")
     private boolean isHighlighted = false;
+
+    @JsonProperty(value = "isEdited")
     private boolean isEdited = false;
+
+    @JsonProperty(value = "isSpam")
     private boolean isSpam = false;
+
+    @JsonProperty(value = "isDeleted")
     private boolean isDeleted = false;
+
+    private int id;
 
     public PostCreationRequest() {
 
     }
 
     public PostCreationRequest(String forum, String user, String date, String message, Integer thread, Integer parent, boolean isApproved,
-                               boolean isHighlighted, boolean isEdited, boolean isSpam, boolean isDeleted) {
+                               boolean isHighlighted, boolean isEdited, boolean isSpam, boolean isDeleted, int id) {
         this.forum = forum;
         this.user = user;
         this.date = date;
@@ -50,6 +63,7 @@ public class PostCreationRequest extends Request {
         this.isEdited = isEdited;
         this.isSpam = isSpam;
         this.isDeleted = isDeleted;
+        this.id = id;
     }
 
     public String getForum() {
@@ -96,6 +110,10 @@ public class PostCreationRequest extends Request {
         return isDeleted;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public void setForum(String forum) {
         this.forum = forum;
     }
@@ -138,5 +156,9 @@ public class PostCreationRequest extends Request {
 
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }

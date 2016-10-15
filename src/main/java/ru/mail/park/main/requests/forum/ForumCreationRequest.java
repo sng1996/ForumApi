@@ -56,7 +56,7 @@ public class ForumCreationRequest extends Request {
         this.name = name;
     }
 
-    public void setId(String short_name) {
+    public void setShort_name(String short_name) {
         this.short_name = short_name;
     }
 

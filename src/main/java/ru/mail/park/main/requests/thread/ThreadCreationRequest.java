@@ -1,5 +1,6 @@
 package ru.mail.park.main.requests.thread;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import ru.mail.park.main.requests.Request;
 
 import javax.validation.constraints.NotNull;
@@ -17,6 +18,7 @@ public class ThreadCreationRequest extends Request {
     private String title;
 
     @NotNull
+    @JsonProperty(value = "isClosed")
     private boolean isClosed;
 
     @NotNull
@@ -30,10 +32,14 @@ public class ThreadCreationRequest extends Request {
 
     @NotNull
     private String slug;
+
+    @JsonProperty(value = "isDeleted")
     private boolean isDeleted = false;
 
+    private Integer id;
+
     public ThreadCreationRequest(String forum, String title, boolean isClosed, String user,
-                                 String date, String message, String slug, boolean isDeleted) {
+                                 String date, String message, String slug, boolean isDeleted, Integer id) {
         this.forum = forum;
         this.title = title;
         this.isClosed = isClosed;
@@ -42,6 +48,7 @@ public class ThreadCreationRequest extends Request {
         this.message = message;
         this.slug = slug;
         this.isDeleted = isDeleted;
+        this.id = id;
     }
 
     public ThreadCreationRequest() {
@@ -80,6 +87,10 @@ public class ThreadCreationRequest extends Request {
         return isDeleted;
     }
 
+    public Integer getId() {
+        return id;
+    }
+
     public void setForum(String forum) {
         this.forum = forum;
     }
@@ -110,5 +121,9 @@ public class ThreadCreationRequest extends Request {
 
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 }
