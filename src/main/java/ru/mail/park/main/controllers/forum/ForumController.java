@@ -49,7 +49,7 @@ public class ForumController extends Controller {
     }
 
     @RequestMapping(path = "db/api/forum/details/", method = RequestMethod.GET)
-    public ResponseEntity getUserInfo(@RequestParam("related") String related,
+    public ResponseEntity getUserInfo(@RequestParam(value = "related", required = false) String related,
                                       @RequestParam("forum") String shortName) {
 
         if (shortName.isEmpty()) return ResponseEntity.ok().body(
@@ -60,7 +60,7 @@ public class ForumController extends Controller {
 
             ObjectNode forumInfo;
 
-            if (!related.equals("user"))
+            if (related == null || !related.equals("user"))
                 forumInfo = ForumQueries.getForumInfoByShortName(shortName, false);
             else
                 forumInfo = ForumQueries.getForumInfoByShortName(shortName, true);

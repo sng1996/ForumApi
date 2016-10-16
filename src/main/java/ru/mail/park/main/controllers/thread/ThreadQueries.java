@@ -1,6 +1,7 @@
 package ru.mail.park.main.controllers.thread;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import ru.mail.park.main.controllers.forum.ForumQueries;
 import ru.mail.park.main.controllers.user.UserQueries;
@@ -30,6 +31,25 @@ public class ThreadQueries {
                 ')';
     }
 
+    private static void fillThreadFromTable(ResultSet result, ObjectNode threadInfo,
+                                           Map<String, Integer> ids) throws SQLException {
+        threadInfo.put("date", result.getString("creationDate").replace(".0", ""));
+        threadInfo.put("dislikes", result.getInt("dislikes"));
+        threadInfo.put("id", result.getInt("threadID"));
+        threadInfo.put("isClosed", result.getBoolean("isClosed"));
+        threadInfo.put("isDeleted", result.getBoolean("isDeleted"));
+        threadInfo.put("likes", result.getInt("likes"));
+        threadInfo.put("message", result.getString("message"));
+        threadInfo.put("points", threadInfo.get("likes").asInt() -
+                threadInfo.get("dislikes").asInt());
+        threadInfo.put("posts", result.getInt("postCount"));
+        threadInfo.put("slug", result.getString("slug"));
+        threadInfo.put("title", result.getString("title"));
+
+        ids.put("forumID", result.getInt("forumID"));
+        ids.put("userID", result.getInt("userID"));
+    }
+
     public static ObjectNode getThreadInfoById(int threadId) throws SQLException {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -40,27 +60,84 @@ public class ThreadQueries {
         Database.select("SELECT * FROM threads WHERE threadID=" + threadId,
                 result -> {
                     result.next();
-                    threadInfo.put("date", result.getString("creationDate").replace(".0", ""));
-                    threadInfo.put("dislikes", result.getInt("dislikes"));
-                    threadInfo.put("id", result.getInt("threadID"));
-                    threadInfo.put("isClosed", result.getBoolean("isClosed"));
-                    threadInfo.put("isDeleted", result.getBoolean("isDeleted"));
-                    threadInfo.put("likes", result.getInt("likes"));
-                    threadInfo.put("message", result.getString("message"));
-                    threadInfo.put("points", threadInfo.get("likes").asInt() -
-                                    threadInfo.get("dislikes").asInt());
-                    threadInfo.put("posts", result.getInt("postCount"));
-                    threadInfo.put("slug", result.getString("slug"));
-                    threadInfo.put("title", result.getString("title"));
-
-                    ids.put("forumID", result.getInt("forumID"));
-                    ids.put("userID", result.getInt("userID"));
+                    fillThreadFromTable(result, threadInfo, ids);
                 });
 
         threadInfo.put("user", UserQueries.getEmailByUserId(ids.get("userID")));
         threadInfo.put("forum", ForumQueries.getShortNameByForumId(ids.get("forumID")));
 
         return threadInfo;
+    }
+
+    public static ArrayNode getThreadList(Map<String, String> threadSource, Integer limit,
+                                        String startDate, String order) throws SQLException {
+        ObjectMapper mapper = new ObjectMapper();
+
+        final ArrayNode threadList = mapper.createArrayNode();
+
+        final StringBuilder query = new StringBuilder();
+        query.append("SELECT threads.* FROM threads INNER JOIN ");
+
+        String filterStatement = null;
+
+        if (threadSource.containsKey("forum")) {
+            query.append("forums ON threads.forumID=forums.forumID ");
+            filterStatement = "threads.forumID=" +
+                    ForumQueries.getForumIdByShortName(threadSource.get("forum")) + ' ';
+        } else {
+            query.append("users ON threads.userID=users.userID ");
+            filterStatement = "threads.userID=" +
+                    UserQueries.getUserIdByEmail(threadSource.get("user")) + ' ';
+        }
+
+        query.append("WHERE ");
+        if (startDate != null && !startDate.isEmpty()) {
+            query.append("threads.creationDate>='").append(startDate).append("' AND ");
+        }
+
+        query.append(filterStatement);
+        query.append("ORDER BY threads.creationDate ").append(order).append(' ');
+        if (limit != null) query.append("LIMIT ").append(limit);
+
+        final Map<String, Integer> ids = new HashMap<String, Integer>();
+
+        Database.select(query.toString(), result -> {
+            while(result.next()) {
+                final ObjectNode threadInfo = mapper.createObjectNode();
+
+                ThreadQueries.fillThreadFromTable(result, threadInfo, ids);
+                //FIXME: SLOW!!!
+                threadInfo.put("user", UserQueries.getEmailByUserId(ids.get("userID")));
+                threadInfo.put("forum", ForumQueries.getShortNameByForumId(ids.get("forumID")));
+                threadList.add(threadInfo);
+            }
+        });
+
+        return threadList;
+    }
+
+    public static String createThreadRemovalQuery(int threadId) {
+        return "UPDATE threads SET isDeleted=TRUE WHERE threadID=" + threadId;
+    }
+
+    public static String createRelatedPostsRemovalQuery(int threadId) {
+        return "UPDATE posts SET isDeleted=TRUE WHERE threadID=" + threadId;
+    }
+
+    public static String createThreadCloseQuery(int threadId) {
+        return "UPDATE threads SET isClosed=TRUE WHERE threadID=" + threadId;
+    }
+
+    public static String createThreadOpenQuery(int threadId) {
+        return "UPDATE threads SET isClosed=FALSE WHERE threadID=" + threadId;
+    }
+
+    public static String createThreadRestoreQuery(int threadId) {
+        return "UPDATE threads SET isDeleted=False WHERE threadID=" + threadId;
+    }
+
+    public static String createRelatedPostsRestoreQuery(int threadId) {
+        return "UPDATE posts SET isDeleted=FALSE WHERE threadID=" + threadId;
     }
 
 }

@@ -8,6 +8,8 @@ import ru.mail.park.main.controllers.thread.ThreadQueries;
 import ru.mail.park.main.controllers.user.UserQueries;
 import ru.mail.park.main.database.Database;
 import ru.mail.park.main.requests.post.PostCreationRequest;
+import ru.mail.park.main.requests.post.PostUpdateRequest;
+import ru.mail.park.main.requests.post.PostVoteRequest;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,6 +19,7 @@ import java.util.Map;
 /**
  * Created by farid on 12.10.16.
  */
+@SuppressWarnings("Duplicates")
 public class PostQueries {
 
     public static String createPostQuery(PostCreationRequest postCreationRequest, int threadId,
@@ -77,7 +80,7 @@ public class PostQueries {
     }
 
     public static ObjectNode getPostInfoById(int postId) throws SQLException {
-        ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = new ObjectMapper();
 
         final ObjectNode postInfo = mapper.createObjectNode();
 
@@ -95,16 +98,29 @@ public class PostQueries {
         return postInfo;
     }
 
+    private static void getRootPostPaths(int threadId,
+                                       int limit, StringBuilder rootPostPaths, String order) throws SQLException {
+        Database.select("SELECT DISTINCT SUBSTRING_INDEX(posts.path,'/',2) AS root FROM posts " +
+                        "WHERE threadID=" + threadId + " ORDER BY root " + order + ' ' +
+                        "LIMIT " + limit,
+                result -> {
+                    while(result.next()) {
+                        rootPostPaths.append('\'').append(result.getString("root")).append("',");
+                    }
+                    rootPostPaths.deleteCharAt(rootPostPaths.length() - 1);
+                });
+    }
+
+    //checks which values are not null by itself (except for threadId)
     public static ArrayNode getPostList(int threadId, Integer limit,
-                                         String startDate, String order) throws SQLException {
+                                         String startDate, String order, String sortType) throws SQLException {
         ObjectMapper mapper = new ObjectMapper();
 
         final ArrayNode postList = mapper.createArrayNode();
         final Map<String, Integer> ids = new HashMap<String, Integer>();
 
         StringBuilder query = new StringBuilder();
-        query.append("SELECT DISTINCT posts.* FROM posts INNER JOIN threads ");
-        query.append("ON posts.threadID=threads.threadID ");
+        query.append("SELECT SUBSTRING_INDEX(posts.path,'/',2) AS root, posts.* FROM posts ");
         query.append("WHERE ");
 
         if (startDate != null && !startDate.isEmpty()) {
@@ -112,8 +128,28 @@ public class PostQueries {
         }
 
         query.append("posts.threadID=").append(threadId).append(' ');
-        query.append("ORDER BY posts.creationDate ").append(order).append(' ');
-        if (limit != null) query.append("LIMIT ").append(limit).append(' ');
+
+        if (sortType == null || sortType.equals("plain")) {
+            query.append("ORDER BY posts.creationDate ").append(order).append(' ');
+            if (limit != null)  query.append("LIMIT ").append(limit).append(' ');query.append(' ');
+        }
+
+        if (sortType != null && sortType.equals("tree")) {
+            query.append("ORDER BY root ").append(order).append(", ");
+            query.append("path ASC ");
+            if (limit != null) query.append("LIMIT ").append(limit).append(' ');query.append(' ');
+        }
+
+        if (limit != null) {
+            if(sortType != null && sortType.equals("parent_tree")) {
+                final StringBuilder rootPostPaths = new StringBuilder();
+
+                getRootPostPaths(threadId, limit, rootPostPaths, order);
+                query.append("HAVING root IN (").append(rootPostPaths.toString()).append(") ");
+                query.append("ORDER BY root ").append(order).append(", ");
+                query.append("path ASC");
+            }
+        }
 
         Database.select(query.toString(), result -> {
                     while(result.next()) {
@@ -141,7 +177,7 @@ public class PostQueries {
         Integer forumId = ForumQueries.getForumIdByShortName(forumShortName);
 
         StringBuilder query = new StringBuilder();
-        query.append("SELECT DISTINCT posts.* FROM posts INNER JOIN forums ");
+        query.append("SELECT posts.* FROM posts INNER JOIN forums ");
         query.append("ON posts.forumID=forums.forumID ");
         query.append("WHERE ");
         if (startDate != null && !startDate.isEmpty()) {
@@ -165,5 +201,25 @@ public class PostQueries {
         });
 
         return postList;
+    }
+
+    public static String createPostRemovalQuery(int postId) {
+        return "UPDATE posts SET isDeleted=TRUE WHERE postID=" + postId;
+    }
+
+    public static String createPostRestoreQuery(int postId) {
+        return "UPDATE posts SET isDeleted=FALSE WHERE postID=" + postId;
+    }
+
+    public static String createPostUpdateQuery(PostUpdateRequest postUpdateRequest) {
+        return "UPDATE posts SET message='" + postUpdateRequest.getMessage() + "' " +
+                "WHERE postID=" + postUpdateRequest.getPost();
+    }
+
+    public static String createPostVoteQuery(PostVoteRequest postVoteRequest) {
+        return "UPDATE posts SET " +
+                ((postVoteRequest.getVote() == 1) ? "likes=likes+1, points=points+1 " :
+                        "dislikes=dislikes+1, points=points-1 ") +
+                "WHERE postID=" + postVoteRequest.getPost();
     }
 }

@@ -7,22 +7,22 @@ import javax.validation.constraints.NotNull;
 /**
  * Created by farid on 16.10.16.
  */
-public class PostRemovalRequest extends Request {
+public class PostRestoreRequest extends Request{
     @NotNull
-    int post;
+    Integer post;
 
-    public PostRemovalRequest(int post) {
+    public PostRestoreRequest(Integer post) {
         this.post = post;
     }
 
-    public PostRemovalRequest() {
+    public PostRestoreRequest() {
     }
 
-    public int getPost() {
+    public Integer getPost() {
         return post;
     }
 
-    public void setPost(int post) {
+    public void setPost(Integer post) {
         this.post = post;
     }
 }

@@ -48,8 +48,8 @@ public class Database {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
                 try(ResultSet result = statement.getGeneratedKeys()) {
-                    result.next();
-                    return result.getInt(1);
+                    if(result.next()) return result.getInt(1);
+                    return 0;
                 }
             }
         }
