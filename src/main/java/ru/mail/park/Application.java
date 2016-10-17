@@ -11,6 +11,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
 }
