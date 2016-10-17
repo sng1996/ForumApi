@@ -12,8 +12,7 @@ import ru.mail.park.main.controllers.forum.ForumQueries;
 import ru.mail.park.main.controllers.post.PostQueries;
 import ru.mail.park.main.controllers.user.UserQueries;
 import ru.mail.park.main.database.Database;
-import ru.mail.park.main.requests.thread.ThreadCreationRequest;
-import ru.mail.park.main.requests.thread.ThreadIdRequest;
+import ru.mail.park.main.requests.thread.*;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -119,10 +118,10 @@ public class ThreadController extends Controller {
 
             if (userEmail != null) {
                 threadSource.put("user", userEmail);
-                postList = ThreadQueries.getThreadList(threadSource, limit, startDate, order);
+                postList = ThreadQueries.getThreadList(threadSource, limit, startDate, order, null);
             } else {
                 threadSource.put("forum", forumShortName);
-                postList = ThreadQueries.getThreadList(threadSource, limit, startDate, order);
+                postList = ThreadQueries.getThreadList(threadSource, limit, startDate, order, null);
             }
 
             final ObjectNode response = mapper.createObjectNode();
@@ -238,7 +237,7 @@ public class ThreadController extends Controller {
 
             ArrayNode postList = null;
 
-            postList = PostQueries.getPostList(threadId, limit, startDate, order, sortType);
+            postList = PostQueries.getPostList(threadId, limit, startDate, order, sortType, null);
 
             final ObjectNode response = mapper.createObjectNode();
 
@@ -258,4 +257,81 @@ public class ThreadController extends Controller {
                     ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
         }
     }
+
+    @RequestMapping(path="/db/api/thread/subscribe/", method = RequestMethod.POST)
+    public ResponseEntity subscribeToThread(@RequestBody ThreadSubscriptionRequest body) {
+        if (!validator.validate(body).isEmpty()) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST)
+            );
+        }
+
+        try {
+            String query = ThreadQueries.createSubscriptionQuery(body);
+
+            Database.update(query);
+            return ResponseEntity.ok().body(body.responsify());
+        } catch (SQLException ex) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
+        }
+    }
+
+    @RequestMapping(path="/db/api/thread/unsubscribe/", method = RequestMethod.POST)
+    public ResponseEntity unsubscribeFromThread(@RequestBody ThreadSubscriptionRequest body) {
+        if (!validator.validate(body).isEmpty()) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST)
+            );
+        }
+
+        try {
+            String query = ThreadQueries.createUnsubscriptionQuery(body);
+
+            Database.update(query);
+            return ResponseEntity.ok().body(body.responsify());
+        } catch (SQLException ex) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
+        }
+    }
+
+    @RequestMapping(path="/db/api/thread/update/", method = RequestMethod.POST)
+    public ResponseEntity updateThread(@RequestBody ThreadUpdateRequest body) {
+        if (!validator.validate(body).isEmpty()) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST)
+            );
+        }
+
+        String query = ThreadQueries.createThreadUpdateQuery(body);
+
+        try {
+            Database.update(query);
+            return ResponseEntity.ok().body(body.responsify());
+        } catch (SQLException ex) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
+        }
+    }
+
+    @RequestMapping(path="/db/api/thread/vote/", method = RequestMethod.POST)
+    public ResponseEntity voteForThread(@RequestBody ThreadVoteRequest body) {
+        if (!validator.validate(body).isEmpty()) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.INCORRECT_REQUEST)
+            );
+        }
+
+        try {
+            String query = ThreadQueries.createThreadVoteQuery(body);
+
+            Database.update(query);
+            return ResponseEntity.ok().body(body.responsify());
+        } catch (SQLException ex) {
+            return ResponseEntity.ok().body(
+                    ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
+        }
+    }
+
 }

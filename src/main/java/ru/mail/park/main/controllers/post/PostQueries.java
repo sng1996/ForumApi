@@ -13,6 +13,7 @@ import ru.mail.park.main.requests.post.PostVoteRequest;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,8 +72,7 @@ public class PostQueries {
         if(result.wasNull()) parentId = null;
 
         postInfo.put("parent", parentId);
-        postInfo.put("points", postInfo.get("likes").asInt() -
-                postInfo.get("dislikes").asInt());
+        postInfo.put("points", postInfo.get("likes").asInt() - postInfo.get("dislikes").asInt());
         postInfo.put("thread", result.getInt("threadID"));
 
         ids.put("forumID", result.getInt("forumID"));
@@ -98,6 +98,7 @@ public class PostQueries {
         return postInfo;
     }
 
+    //In order to display by parents limit
     private static void getRootPostPaths(int threadId,
                                        int limit, StringBuilder rootPostPaths, String order) throws SQLException {
         Database.select("SELECT DISTINCT SUBSTRING_INDEX(posts.path,'/',2) AS root FROM posts " +
@@ -111,9 +112,24 @@ public class PostQueries {
                 });
     }
 
+    private static void insertRelatedStuff(ObjectNode postInfo,
+                                           ArrayList<String> related) throws SQLException {
+        if (related.contains("user")) {
+            postInfo.set("user", UserQueries.getUserInfoByEmail(postInfo.get("user").asText()));
+        }
+
+        if (related.contains("thread")) {
+            postInfo.set("thread", ThreadQueries.getThreadInfoById(postInfo.get("thread").asInt()));
+        }
+
+        if (related.contains("forum")) {
+            postInfo.set("forum", ForumQueries.getForumInfoByShortName(postInfo.get("forum").asText(), false));
+        }
+    }
+
     //checks which values are not null by itself (except for threadId)
-    public static ArrayNode getPostList(int threadId, Integer limit,
-                                         String startDate, String order, String sortType) throws SQLException {
+    public static ArrayNode getPostList(int threadId, Integer limit, String startDate,
+                                        String order, String sortType, ArrayList<String> related) throws SQLException {
         ObjectMapper mapper = new ObjectMapper();
 
         final ArrayNode postList = mapper.createArrayNode();
@@ -159,6 +175,11 @@ public class PostQueries {
                         //FIXME: SLOW!!!
                         postInfo.put("user", UserQueries.getEmailByUserId(ids.get("userID")));
                         postInfo.put("forum", ForumQueries.getShortNameByForumId(ids.get("forumID")));
+
+                        if (related != null) {
+                            insertRelatedStuff(postInfo, related);
+                        }
+
                         postList.add(postInfo);
                     }
                 });
@@ -166,8 +187,8 @@ public class PostQueries {
         return postList;
     }
 
-    public static ArrayNode getPostList(String forumShortName, Integer limit,
-                                        String startDate, String order) throws SQLException {
+    public static ArrayNode getPostList(String forumShortName, Integer limit, String startDate,
+                                        String order, ArrayList<String> related) throws SQLException {
         ObjectMapper mapper = new ObjectMapper();
 
         final ArrayNode postList = mapper.createArrayNode();
@@ -180,6 +201,8 @@ public class PostQueries {
         query.append("SELECT posts.* FROM posts INNER JOIN forums ");
         query.append("ON posts.forumID=forums.forumID ");
         query.append("WHERE ");
+
+
         if (startDate != null && !startDate.isEmpty()) {
             query.append("posts.creationDate>='").append(startDate).append("' AND ");
         }
@@ -196,6 +219,11 @@ public class PostQueries {
                 //FIXME: SLOW!!!
                 postInfo.put("user", UserQueries.getEmailByUserId(ids.get("userID")));
                 postInfo.put("forum", ForumQueries.getShortNameByForumId(ids.get("forumID")));
+
+                if (related != null) {
+                    insertRelatedStuff(postInfo, related);
+                }
+
                 postList.add(postInfo);
             }
         });

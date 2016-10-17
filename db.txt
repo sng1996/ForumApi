@@ -32,13 +32,14 @@ CREATE TABLE IF NOT EXISTS threads (
   userID INT NOT NULL,
   title VARCHAR(255) NOT NULL,
   isClosed BOOL NOT NULL DEFAULT FALSE,
-  creationDate TIMESTAMP NOT NULL,
+  creationDate DATETIME NOT NULL,
   message MEDIUMTEXT NOT NULL,
   slug VARCHAR(255),
 
   isDeleted BOOL DEFAULT FALSE,
   likes INT NOT NULL DEFAULT 0,
   dislikes INT NOT NULL DEFAULT 0,
+  points INT NOT NULL DEFAULT 0,
   postCount INT NOT NULL DEFAULT 0,
 
   PRIMARY KEY (threadID),
@@ -50,18 +51,22 @@ CREATE TABLE IF NOT EXISTS threads (
 
 CREATE TABLE IF NOT EXISTS posts (
   postID INT NOT NULL AUTO_INCREMENT,
-  creationDate TIMESTAMP NOT NULL,
+  creationDate DATETIME NOT NULL,
   threadID INT NOT NULL,
   message MEDIUMTEXT NOT NULL,
   userID INT NOT NULL,
   forumID INT NOT NULL,
 
   parentPostID INT DEFAULT NULL,
+  path VARCHAR(1024) NOT NULL DEFAULT '',
   isApproved BOOL DEFAULT FALSE,
   isHighlighted BOOL DEFAULT FALSE,
   isEdited BOOL DEFAULT FALSE,
   isSpam BOOL DEFAULT FALSE,
   isDeleted BOOL DEFAULT FALSE,
+  likes INT NOT NULL DEFAULT 0,
+  dislikes INT NOT NULL DEFAULT 0,
+  points INT NOT NULL DEFAULT 0,
 
   PRIMARY KEY (postID),
   CONSTRAINT fk_post_parentPost FOREIGN KEY (parentPostID)
@@ -116,9 +121,11 @@ END;//
 DELIMITER ;
 
 DELIMITER //
-CREATE TRIGGER postAddTrigger AFTER INSERT ON posts
+CREATE TRIGGER postAddTrigger BEFORE INSERT ON posts
 FOR EACH ROW
   BEGIN
+    DECLARE parentPath VARCHAR(255);
+
     UPDATE counters
     SET counters.count = counters.count + 1
     WHERE counters.counterName = 'posts';
@@ -127,6 +134,25 @@ FOR EACH ROW
     SET threads.postCount = threads.postCount + 1
     WHERE threads.threadID = new.threadID;
   END;//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER postDeleteTrigger AFTER UPDATE ON posts
+FOR EACH ROW
+  BEGIN
+    IF NEW.isDeleted = TRUE AND OLD.isDeleted = FALSE
+    THEN
+      UPDATE threads SET threads.postCount = threads.postCount - 1
+      WHERE threads.threadID = OLD.threadID;
+    END IF;
+
+    IF NEW.isDeleted = FALSE AND OLD.isDeleted = TRUE
+    THEN
+      UPDATE threads SET threads.postCount = threads.postCount + 1
+      WHERE threads.threadID = OLD.threadID;
+    END IF;
+
+  END; //
 DELIMITER ;
 
 DELIMITER //

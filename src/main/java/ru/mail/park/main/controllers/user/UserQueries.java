@@ -88,12 +88,11 @@ public class UserQueries {
         //getting subscriptions
         final ArrayNode subscriptions = mapper.createArrayNode();
 
-        Database.select("SELECT subscriptions.postID FROM subscriptions " +
-                "INNER JOIN posts " +
-                " ON subscriptions.userID=" + userInfoResponse.get("id").asInt(),
+        Database.select("SELECT subscriptions.threadID FROM subscriptions " +
+                "WHERE subscriptions.userID=" + userInfoResponse.get("id").asInt(),
                 result -> {
                     while (result.next()) {
-                        subscriptions.add(result.getInt("postID"));
+                        subscriptions.add(result.getInt("threadID"));
                     }
                 });
 

@@ -137,9 +137,9 @@ public class PostController extends Controller {
             ArrayNode postList;
 
             if (threadId != null) {
-                postList = PostQueries.getPostList(threadId, limit, startDate, order, "plain");
+                postList = PostQueries.getPostList(threadId, limit, startDate, order, null, null);
             } else {
-                postList = PostQueries.getPostList(forumShortName, limit, startDate, order);
+                postList = PostQueries.getPostList(forumShortName, limit, startDate, order, null);
             }
 
             final ObjectNode response = mapper.createObjectNode();

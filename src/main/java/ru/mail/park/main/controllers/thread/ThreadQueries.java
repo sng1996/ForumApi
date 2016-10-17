@@ -7,9 +7,13 @@ import ru.mail.park.main.controllers.forum.ForumQueries;
 import ru.mail.park.main.controllers.user.UserQueries;
 import ru.mail.park.main.database.Database;
 import ru.mail.park.main.requests.thread.ThreadCreationRequest;
+import ru.mail.park.main.requests.thread.ThreadSubscriptionRequest;
+import ru.mail.park.main.requests.thread.ThreadUpdateRequest;
+import ru.mail.park.main.requests.thread.ThreadVoteRequest;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,8 +73,19 @@ public class ThreadQueries {
         return threadInfo;
     }
 
-    public static ArrayNode getThreadList(Map<String, String> threadSource, Integer limit,
-                                        String startDate, String order) throws SQLException {
+    private static void insertRelatedStuff(ObjectNode threadInfo,
+                                           ArrayList<String> related) throws SQLException {
+        if (related.contains("user")) {
+            threadInfo.set("user", UserQueries.getUserInfoByEmail(threadInfo.get("user").asText()));
+        }
+
+        if (related.contains("forum")) {
+            threadInfo.set("forum", ForumQueries.getForumInfoByShortName(threadInfo.get("forum").asText(), false));
+        }
+    }
+
+    public static ArrayNode getThreadList(Map<String, String> threadSource, Integer limit, String startDate,
+                                          String order, ArrayList<String> related) throws SQLException {
         ObjectMapper mapper = new ObjectMapper();
 
         final ArrayNode threadList = mapper.createArrayNode();
@@ -109,6 +124,11 @@ public class ThreadQueries {
                 //FIXME: SLOW!!!
                 threadInfo.put("user", UserQueries.getEmailByUserId(ids.get("userID")));
                 threadInfo.put("forum", ForumQueries.getShortNameByForumId(ids.get("forumID")));
+
+                if(related != null) {
+                    ThreadQueries.insertRelatedStuff(threadInfo, related);
+                }
+
                 threadList.add(threadInfo);
             }
         });
@@ -138,6 +158,32 @@ public class ThreadQueries {
 
     public static String createRelatedPostsRestoreQuery(int threadId) {
         return "UPDATE posts SET isDeleted=FALSE WHERE threadID=" + threadId;
+    }
+
+    public static String createSubscriptionQuery(ThreadSubscriptionRequest
+                                                         threadSubscriptionRequest) throws SQLException {
+        return "INSERT INTO subscriptions (threadID, userID) VALUES (" + threadSubscriptionRequest.getThread() +
+                ", " + UserQueries.getUserIdByEmail(threadSubscriptionRequest.getUser()) + ')';
+    }
+
+    public static String createUnsubscriptionQuery(ThreadSubscriptionRequest
+                                                           threadSubscriptionRequest) throws SQLException {
+        return "DELETE FROM subscriptions WHERE threadID=" +
+                threadSubscriptionRequest.getThread() + " AND userID=" +
+                UserQueries.getUserIdByEmail(threadSubscriptionRequest.getUser());
+    }
+
+    public static String createThreadVoteQuery(ThreadVoteRequest threadVoteRequest) throws SQLException {
+        return "UPDATE threads SET " +
+                ((threadVoteRequest.getVote() == 1) ? "likes=likes+1, points=points+1 " :
+                        "dislikes=dislikes+1, points=points-1 ") +
+                "WHERE threadID=" + threadVoteRequest.getThread();
+    }
+
+    public static String createThreadUpdateQuery(ThreadUpdateRequest threadUpdateRequest) {
+        return "UPDATE threads SET message='" + threadUpdateRequest.getMessage() + "', " +
+                "slug='" + threadUpdateRequest.getSlug() + "' " +
+                "WHERE threadID=" + threadUpdateRequest.getThread();
     }
 
 }

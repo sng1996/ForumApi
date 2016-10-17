@@ -56,7 +56,7 @@ public class UserController extends Controller {
             response.put("code", 0);
             response.set("response", userInfo);
 
-            //System.out.println(mapper.writeValueAsString(response));
+            System.out.println(mapper.writeValueAsString(response));
 
             return ResponseEntity.ok().body(mapper.writeValueAsString(response));
         } catch (SQLException ex) {
