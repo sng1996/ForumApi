@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLDataException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by farid on 12.10.16.
@@ -63,82 +64,5 @@ public class ForumQueries {
         }
 
         return forumInfo;
-    }
-
-    public static ArrayNode getUserList (String forumShortName,
-                                          String order, Integer limit, Integer startId) throws SQLException {
-        ObjectMapper mapper = new ObjectMapper();
-
-        StringBuilder query = new StringBuilder();
-
-        query.append("SELECT users.* FROM users INNER JOIN forums ON " +
-                "users.userID=forums.userID WHERE forums.short_name='");
-        query.append(forumShortName).append("' ");
-
-        if (startId != null) query.append("AND users.userID>=").append(startId).append(' ');
-
-        if (order != null) query.append("ORDER BY users.name ").append(order).append(' ');
-
-        if (limit != null) query.append("LIMIT ").append(limit);
-
-        ArrayNode userList = mapper.createArrayNode();
-
-        Database.select(query.toString(),
-                result -> {
-                    while (result.next()) {
-                        final ObjectNode userInfoResponse = mapper.createObjectNode();
-                        userInfoResponse.put("id", result.getInt("userID"));
-                        userInfoResponse.put("about", result.getString("about"));
-                        userInfoResponse.put("isAnonymous", result.getBoolean("isAnonymous"));
-                        userInfoResponse.put("name", result.getString("name"));
-                        userInfoResponse.put("username", result.getString("username"));
-                        userInfoResponse.put("email", result.getString("email"));
-
-                        //getting followers
-                        final ArrayNode followers = mapper.createArrayNode();
-
-                        Database.select("SELECT email FROM users " +
-                                        "INNER JOIN followers " +
-                                        " ON followers.followeeID=" + userInfoResponse.get("id").asInt(),
-                                res -> {
-                                    while (res.next()) {
-                                        followers.add(res.getString("email"));
-                                    }
-                                });
-
-                        userInfoResponse.set("followers", followers);
-
-                        //getting followees
-                        final ArrayNode followees = mapper.createArrayNode();
-
-                        Database.select("SELECT email FROM users " +
-                                        "INNER JOIN followers " +
-                                        " ON followers.followerID=" + userInfoResponse.get("id").asInt(),
-                                res -> {
-                                    while (res.next()) {
-                                        followees.add(res.getString("email"));
-                                    }
-                                });
-
-                        userInfoResponse.set("following", followees);
-
-                        //getting subscriptions
-                        final ArrayNode subscriptions = mapper.createArrayNode();
-
-                        Database.select("SELECT subscriptions.threadID FROM subscriptions " +
-                                        "WHERE subscriptions.userID=" + userInfoResponse.get("id").asInt(),
-                                res -> {
-                                    while (res.next()) {
-                                        subscriptions.add(res.getInt("threadID"));
-                                    }
-                                });
-
-                        userInfoResponse.set("subscriptions", subscriptions);
-
-                        userList.add(userInfoResponse);
-                    }
-
-                });
-        return userList;
     }
 }

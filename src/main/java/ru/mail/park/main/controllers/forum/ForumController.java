@@ -107,7 +107,10 @@ public class ForumController extends Controller {
 
             ArrayNode postList;
 
-            postList = PostQueries.getPostList(forumShortName, limit, startDate, order, related);
+            Map<String, String> postSource = new HashMap<>();
+            postSource.put("forum", forumShortName);
+
+            postList = PostQueries.getPostList(postSource, limit, startDate, order, related);
 
             final ObjectNode response = mapper.createObjectNode();
 
@@ -186,7 +189,11 @@ public class ForumController extends Controller {
 
             ArrayNode userList;
 
-            userList = ForumQueries.getUserList(forumShortName, order, limit, startId);
+            Map<String, String> userSource = new HashMap<>();
+
+            userSource.put("forum", forumShortName);
+
+            userList = UserQueries.getUserList(userSource, order, limit, startId);
 
             final ObjectNode response = mapper.createObjectNode();
 
@@ -197,10 +204,11 @@ public class ForumController extends Controller {
 
             return ResponseEntity.ok().body(mapper.writeValueAsString(response));
         } catch (SQLException ex) {
-            System.out.println(ex.getMessage());
+            ex.printStackTrace();
             return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));
         } catch (JsonProcessingException ex) {
+            ex.printStackTrace();
             System.out.println(ex.getMessage());
             return ResponseEntity.ok().body(
                     ErrorCodes.codeToJson(ErrorCodes.OBJECT_NOT_FOUND));

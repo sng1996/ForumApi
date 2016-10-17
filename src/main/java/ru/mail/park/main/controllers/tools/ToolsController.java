@@ -21,9 +21,12 @@ public class ToolsController {
             Database.update("DELETE FROM forums");
             Database.update("DELETE FROM threads");
             Database.update("DELETE FROM posts");
+            Database.update("DELETE FROM followers");
+            Database.update("DELETE FROM subscriptions");
             Database.update("UPDATE counters SET count=0");
         }
         catch (SQLException ex) {
+            ex.printStackTrace();
             System.out.print(ex.getMessage());
         }
         return ResponseEntity.ok().body("{\"code\": 0, \"response\": \"OK\"}");

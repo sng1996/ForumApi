@@ -187,7 +187,7 @@ public class PostQueries {
         return postList;
     }
 
-    public static ArrayNode getPostList(String forumShortName, Integer limit, String startDate,
+    public static ArrayNode getPostList(Map<String, String> postSource, Integer limit, String startDate,
                                         String order, ArrayList<String> related) throws SQLException {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -195,19 +195,24 @@ public class PostQueries {
 
         final Map<String, Integer> ids = new HashMap<String, Integer>();
 
-        Integer forumId = ForumQueries.getForumIdByShortName(forumShortName);
-
         StringBuilder query = new StringBuilder();
-        query.append("SELECT posts.* FROM posts INNER JOIN forums ");
-        query.append("ON posts.forumID=forums.forumID ");
+        query.append("SELECT posts.* FROM posts ");
         query.append("WHERE ");
-
 
         if (startDate != null && !startDate.isEmpty()) {
             query.append("posts.creationDate>='").append(startDate).append("' AND ");
         }
 
-        query.append("posts.forumID=").append(forumId).append(' ');
+        if (postSource.containsKey("forum")) {
+            Integer forumId = ForumQueries.getForumIdByShortName(postSource.get("forum"));
+            query.append("posts.forumID=").append(forumId).append(' ');
+        }
+
+        if (postSource.containsKey("user")) {
+            Integer userId = UserQueries.getUserIdByEmail(postSource.get("user"));
+            query.append("posts.userID=").append(userId).append(' ');
+        }
+
         query.append("ORDER BY posts.creationDate ").append(order).append(' ');
         if (limit != null) query.append("LIMIT ").append(limit);
 

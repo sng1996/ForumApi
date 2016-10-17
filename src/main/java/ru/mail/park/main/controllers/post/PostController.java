@@ -17,6 +17,8 @@ import ru.mail.park.main.requests.post.*;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by farid on 12.10.16.
@@ -139,7 +141,9 @@ public class PostController extends Controller {
             if (threadId != null) {
                 postList = PostQueries.getPostList(threadId, limit, startDate, order, null, null);
             } else {
-                postList = PostQueries.getPostList(forumShortName, limit, startDate, order, null);
+                Map<String, String> postSource = new HashMap<>();
+                postSource.put("forum", forumShortName);
+                postList = PostQueries.getPostList(postSource, limit, startDate, order, null);
             }
 
             final ObjectNode response = mapper.createObjectNode();
